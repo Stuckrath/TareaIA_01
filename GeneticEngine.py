@@ -7,13 +7,15 @@ from SearchAgents import AgenteGenetico
 
 
 class ExperimentoGenetico:
-    def __init__(self, ruta_mapa, tam_poblacion=80, num_generaciones=30, prob_mutacion=0.05, k_fuego=5):
+    def __init__(self, ruta_mapa, tam_poblacion=80, num_generaciones=30, prob_mutacion=0.05, k_fuego=5, ui_callback=None):
         self.ruta_mapa = ruta_mapa
         self.tam_poblacion = tam_poblacion
         self.num_generaciones = num_generaciones
         self.prob_mutacion = prob_mutacion
         self.k_fuego = k_fuego
+        self.ui_callback = ui_callback
         self.reportes_generacionales = []
+        self.historiales_generacionales = []
 
     def _seleccion_torneo(self, agentes_evaluados, k=3):
         torneo = random.sample(agentes_evaluados, k)
@@ -53,7 +55,11 @@ class ExperimentoGenetico:
         genomas_actuales = [[random.uniform(-10.0, 10.0) for _ in range(3)] for _ in range(self.tam_poblacion)]
 
         for gen in range(1, self.num_generaciones + 1):
-            print(f"--- Ejecutando Generación {gen}/{self.num_generaciones} ---")
+            msg_inicio = f"[*] Ejecutando Generación {gen}/{self.num_generaciones}..."
+            if self.ui_callback:
+                self.ui_callback(msg_inicio)
+            else:
+                print(msg_inicio)
 
             # Reinstanciar entorno y población limpia para la nueva simulación
             mapa_instancia = Mapa(self.ruta_mapa)
@@ -75,21 +81,31 @@ class ExperimentoGenetico:
             historial = Historial(gen, len(poblacion))
             motor = Simulador(mapa_instancia, poblacion, self.k_fuego, historial)
             reporte_gen = motor.simular_experimento(max_turnos=3000)
+            self.historiales_generacionales.append(historial)
 
-            # Evaluar *Fitness* individual post-simulación[cite: 1]
+           # Evaluar *Fitness* individual post-simulación
             for agente in poblacion:
                 agente.calcular_fitness(mapa_instancia)
 
-            # Guardar reporte de la generación
+            # Encontrar al mejor agente de la generación
+            mejor_agente = max(poblacion, key=lambda a: a.fitness)
             fitness_promedio = sum(a.fitness for a in poblacion) / len(poblacion)
-            best_fitness = max(a.fitness for a in poblacion)
+            best_fitness = mejor_agente.fitness
 
+            # Guardar reporte de la generación con los nuevos datos
             reporte_gen["fitness_promedio"] = round(fitness_promedio, 2)
             reporte_gen["best_fitness"] = round(best_fitness, 2)
+            
+            # Guardamos el ID y los pesos exactos del agente élite
+            reporte_gen["best_genoma"] = [round(w, 3) for w in mejor_agente.genoma]
+            
             self.reportes_generacionales.append(reporte_gen)
 
-            print(
-                f"  > Supervivencia: {reporte_gen['tasa_supervivencia']:.2%} | Best Fitness: {best_fitness:.1f} | Avg Fitness: {fitness_promedio:.1f}")
+            msg_resultado = f"  > Supervivencia: {reporte_gen['tasa_supervivencia']:.2%} | Fit Máx: {best_fitness:.1f} | Fit Promedio: {fitness_promedio:.1f}"
+            if self.ui_callback:
+                self.ui_callback(msg_resultado)
+            else:
+                print(msg_resultado)
 
             # PRODUCCIÓN DE LA SIGUIENTE GENERACIÓN (Cruce y Mutación)[cite: 1]
             nuevos_genomas = []
