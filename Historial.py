@@ -17,6 +17,7 @@ class Historial:
         estado = {
             "turno": turno,
             "agentes": [(a.id, a.posicion) for a in agentes if a.estado == 0],
+            "bajas": [(a.id, a.posicion) for a in agentes if a.estado == 2],  # NUEVO: Guardamos los caídos
             "fuego": np.argwhere(mapa_fuego == 1).tolist()
         }
         self.registro_turnos.append(estado)

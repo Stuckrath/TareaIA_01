@@ -360,3 +360,107 @@ class AgenteAStar(Agente):
                             heapq.heappush(open_set, (f_score, contador, (nf, nc), camino + [move_code]))
 
         return []
+
+class AgenteGreedy(Agente):
+    def __init__(self, id_agente, posicion_inicial):
+        super().__init__(id_agente, posicion_inicial)
+        self.ruta_planeada = []
+        
+        self.turnos_retraso = random.randint(0, 5)
+
+    def decidirMovimiento(self, mapa):
+        f_curr, c_curr = self.posicion
+
+        if mapa.base[f_curr, c_curr] == 2:
+            self.next_move = 0
+            self.ruta_planeada.clear()
+            return
+
+        # --- 1. EVALUACIÓN DE LA RUTA EN CACHÉ ---
+        if self.ruta_planeada:
+            siguiente_paso = self.ruta_planeada[0]
+            df, dc = 0, 0
+            if siguiente_paso == 1:   df = -1
+            elif siguiente_paso == 2: dc = 1
+            elif siguiente_paso == 3: df = 1
+            elif siguiente_paso == 4: dc = -1
+
+            nf, nc = f_curr + df, c_curr + dc
+
+            if 0 <= nf < mapa.base.shape[0] and 0 <= nc < mapa.base.shape[1]:
+                if mapa.fuego[nf, nc] == 1:
+                    self.ruta_planeada.clear()
+                # A diferencia de A*, el agente Greedy es más terco y tolerará niveles 
+                # extremos de tráfico (costo > 20.0) antes de buscar un desvío.
+                elif mapa.costos[nf, nc] > 20.0:
+                    if random.random() < 0.10:
+                        self.ruta_planeada.clear()
+                    else:
+                        self.next_move = 0  
+                        return
+                elif mapa.base[nf, nc] != 1:
+                    self.next_move = self.ruta_planeada.pop(0)
+                    return
+            else:
+                self.ruta_planeada.clear()
+
+        # --- 2. CÁLCULO GREEDY ---
+        self.ruta_planeada = self._calcular_ruta_greedy(mapa)
+
+        if self.ruta_planeada:
+            self.next_move = self.ruta_planeada.pop(0)
+        else:
+            self.next_move = 0 
+
+    def _calcular_ruta_greedy(self, mapa):
+        f_start, c_start = self.posicion
+        if mapa.base[f_start, c_start] == 2:
+            return []
+
+        coords_salida = np.argwhere(mapa.base == 2)
+        if len(coords_salida) == 0:
+            return []
+        f_salida, c_salida = coords_salida[0]
+
+        # Heurística h(n): Distancia Manhattan
+        def heuristica(f, c):
+            return abs(f - f_salida) + abs(c - c_salida)
+
+        contador = 0
+        open_set = []
+        # Cola de prioridad basada EXCLUSIVAMENTE en h(n)
+        heapq.heappush(open_set, (heuristica(f_start, c_start), contador, (f_start, c_start), []))
+        
+        # Eliminamos el g_score porque a este algoritmo no le importa el costo del camino
+        visitados = set()
+
+        movimientos = [(1, -1, 0), (2, 0, 1), (3, 1, 0), (4, 0, -1)]
+        filas, columnas = mapa.base.shape
+
+        while open_set:
+            # Extrae el nodo visualmente más cercano a la salida
+            _, _, (f, c), camino = heapq.heappop(open_set)
+
+            if mapa.base[f, c] == 2:
+                return camino
+
+            if (f, c) in visitados:
+                continue
+            visitados.add((f, c))
+
+            random.shuffle(movimientos)
+
+            for move_code, df, dc in movimientos:
+                nf, nc = f + df, c + dc
+                
+                if 0 <= nf < filas and 0 <= nc < columnas:
+                    # NOTA: Ignoramos mapa.costos[nf, nc] al evaluar los vecinos
+                    if mapa.base[nf, nc] != 1 and mapa.fuego[nf, nc] != 1 and (nf, nc) not in visitados:
+                        
+                        # f(n) = h(n)
+                        h_score = heuristica(nf, nc)
+                        contador += 1
+                        
+                        heapq.heappush(open_set, (h_score, contador, (nf, nc), camino + [move_code]))
+        
+        return []

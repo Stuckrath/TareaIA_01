@@ -26,6 +26,8 @@ def inicializar_poblacion(tipo_algoritmo, celdas_spawn, total_agentes):
                 poblacion.append(sa.AgenteDFS(id_actual, coordenada))
             elif tipo_algoritmo == "ASTAR":
                 poblacion.append(sa.AgenteAStar(id_actual, coordenada))
+            elif tipo_algoritmo == "GREEDY":
+                poblacion.append(sa.AgenteGreedy(id_actual, coordenada))
             else:
                 raise ValueError(f"Algoritmo {tipo_algoritmo} no reconocido.")
             id_actual += 1
@@ -73,44 +75,58 @@ if __name__ == "__main__":
     # --- PANEL DE CONFIGURACIÓN DEL EXPERIMENTO ---
     # Cambia estos valores para preparar distintas baterías de pruebas
     CONFIG = {
-        "algoritmo": "BFS",  # Opciones: "BFS", "DFS", "ASTAR"
-        "mapa": "Map1.png",  # Opciones: "Map1.png", "Map2.png", etc.
+        "algoritmo": "GREEDY",  # Opciones: "BFS", "DFS", "ASTAR"
+        "mapa": "Map2.png",  # Opciones: "Map1.png", "Map2.png", etc.
         "agentes": 150,  # Tamaño de la multitud
         "k_fuego": 5,  # Propagación del fuego (menor = más rápido)
         "max_turnos": 3000,  # Límite de corte temporal
         "num_iteraciones": 10  # Cantidad de experimentos a promediar
     }
 
-    print(f"=== INICIANDO BATERÍA DE PRUEBAS ===")
-    print(f"Algoritmo: {CONFIG['algoritmo']} | Mapa: {CONFIG['mapa']} | "
-          f"Agentes: {CONFIG['agentes']} | Iteraciones: {CONFIG['num_iteraciones']}\n")
+    if CONFIG["algoritmo"] == "GENETICO":
+            from GeneticEngine import ExperimentoGenetico
+            print(f"[*] Ejecutando Orquestador Evolutivo...")
+            experimento = ExperimentoGenetico(
+                ruta_mapa=CONFIG["mapa"],
+                tam_poblacion=CONFIG["agentes"],
+                num_generaciones=CONFIG["num_iteraciones"], # Usamos num_iteraciones como generaciones
+                prob_mutacion=0.05,
+                k_fuego=CONFIG["k_fuego"]
+            )
+            # ejecutar_evolucion ya retorna la lista de reportes generacionales
+            todos_los_reportes = experimento.ejecutar_evolucion()
+            mostrar_estadisticas_globales(todos_los_reportes, CONFIG)
+    else:
+        print(f"=== INICIANDO BATERÍA DE PRUEBAS ===")
+        print(f"Algoritmo: {CONFIG['algoritmo']} | Mapa: {CONFIG['mapa']} | "
+            f"Agentes: {CONFIG['agentes']} | Iteraciones: {CONFIG['num_iteraciones']}\n")
 
-    todos_los_reportes = []
-    todos_los_historiales = []
+        todos_los_reportes = []
+        todos_los_historiales = []
 
-    try:
-        # Bucle principal de experimentación
-        for iteracion in range(1, CONFIG["num_iteraciones"] + 1):
-            print(f"[*] Ejecutando iteración {iteracion}/{CONFIG['num_iteraciones']}...")
+        try:
+            # Bucle principal de experimentación
+            for iteracion in range(1, CONFIG["num_iteraciones"] + 1):
+                print(f"[*] Ejecutando iteración {iteracion}/{CONFIG['num_iteraciones']}...")
 
-            reporte, historial = ejecutar_iteracion(iteracion, CONFIG)
+                reporte, historial = ejecutar_iteracion(iteracion, CONFIG)
 
-            todos_los_reportes.append(reporte)
-            todos_los_historiales.append(historial)
+                todos_los_reportes.append(reporte)
+                todos_los_historiales.append(historial)
 
-            # Puedes silenciar este print si solo te interesan las estadísticas globales
-            print(f"    -> Supervivencia: {reporte['tasa_supervivencia']:.2%} | "
-                  f"CPU: {reporte['tiempo_ejecucion_seg']:.4f}s")
+                # Puedes silenciar este print si solo te interesan las estadísticas globales
+                print(f"    -> Supervivencia: {reporte['tasa_supervivencia']:.2%} | "
+                    f"CPU: {reporte['tiempo_ejecucion_seg']:.4f}s")
 
-        # Imprimir resultados consolidados
-        mostrar_estadisticas_globales(todos_los_reportes, CONFIG)
+            # Imprimir resultados consolidados
+            mostrar_estadisticas_globales(todos_los_reportes, CONFIG)
 
-        # (Opcional) Consultar un historial específico al azar
-        # print("Revisión del estado final de la primera iteración:")
-        # mapa_ref = Mapa(CONFIG["mapa"])
-        # todos_los_historiales[0].imprimir_turno(todos_los_reportes[0]['turnos_simulacion'], mapa_ref.base)
+            # (Opcional) Consultar un historial específico al azar
+            # print("Revisión del estado final de la primera iteración:")
+            # mapa_ref = Mapa(CONFIG["mapa"])
+            # todos_los_historiales[0].imprimir_turno(todos_los_reportes[0]['turnos_simulacion'], mapa_ref.base)
 
-    except FileNotFoundError:
-        print(f"[!] Error: No se encontró el mapa '{CONFIG['mapa']}'.")
-    except Exception as e:
-        print(f"[!] Error inesperado en la simulación: {e}")
+        except FileNotFoundError:
+            print(f"[!] Error: No se encontró el mapa '{CONFIG['mapa']}'.")
+        except Exception as e:
+            print(f"[!] Error inesperado en la simulación: {e}")
