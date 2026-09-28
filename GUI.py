@@ -1,10 +1,10 @@
 import tkinter as tk
 from tkinter import ttk
 import threading
-import time
 import numpy as np
 import csv
 from datetime import datetime
+import os
 
 # Importaciones de tu motor
 from MapBuilder import Mapa
@@ -171,7 +171,7 @@ class SimuladorGUI:
         self.historiales_guardados.clear()
         
         # Variable para controlar los textos de la interfaz
-        self.etiqueta_modo = "Gen." if algoritmo == "GENETICO" else "Iteración"
+        self.etiqueta_modo = "Gen." if algoritmo == "GENETICO" else "Iter."
         
         if algoritmo == "GENETICO" and GENETICO_DISPONIBLE:
             self.log("[*] Iniciando Motor Evolutivo...")
@@ -386,9 +386,12 @@ class SimuladorGUI:
         
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         fecha_legible = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        carpeta_salida = "resultados"
+        os.makedirs(carpeta_salida, exist_ok=True)
         
         # 1. Archivo Estándar (Compartido por todos los algoritmos)
-        nombre_base = f"resultados_{algo}_{timestamp}.csv"
+        nombre_base = os.path.join(carpeta_salida, f"resultados_{algo}_{timestamp}.csv")
         try:
             with open(nombre_base, mode='w', newline='', encoding='utf-8') as f:
                 writer = csv.writer(f)
@@ -436,7 +439,7 @@ class SimuladorGUI:
             self.log(f"\n[+] Datos generales exportados a: {nombre_base}")
 
             if algo == "GENETICO" and GENETICO_DISPONIBLE:
-                nombre_genetico = f"resultados_genetico_detalles_{timestamp}.csv"
+                nombre_genetico = os.path.join(carpeta_salida, f"resultados_genetico_detalles_{timestamp}.csv")
                 with open(nombre_genetico, mode='w', newline='', encoding='utf-8') as f:
                     writer = csv.writer(f)
                     
