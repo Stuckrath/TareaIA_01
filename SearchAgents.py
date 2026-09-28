@@ -248,14 +248,12 @@ class AgenteAStar(Agente):
     def __init__(self, id_agente, posicion_inicial):
         super().__init__(id_agente, posicion_inicial)
         self.ruta_planeada = []
-
         # 1. DESINCRONIZACIÓN (Tiempo de Reacción)
         # Los agentes "despiertan" en turnos distintos, permitiendo que el tráfico fluya al inicio
         self.turnos_retraso = random.randint(0, 5)
 
     def decidirMovimiento(self, mapa):
         f_curr, c_curr = self.posicion
-
         # Si llegó a la salida, se detiene
         if mapa.base[f_curr, c_curr] == 2:
             self.next_move = 0
@@ -263,6 +261,8 @@ class AgenteAStar(Agente):
             return
 
         # --- 1. EVALUACIÓN DE LA RUTA EN CACHÉ ---
+        if random.random() < 0.2:
+                self.ruta_planeada.clear()
         if self.ruta_planeada:
             siguiente_paso = self.ruta_planeada[0]
             df, dc = 0, 0
