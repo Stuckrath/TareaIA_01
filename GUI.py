@@ -468,8 +468,3 @@ class SimuladorGUI:
                 
         except Exception as e:
             self.log(f"[!] Error al exportar CSV: {e}")
-
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = SimuladorGUI(root)
-    root.mainloop()
