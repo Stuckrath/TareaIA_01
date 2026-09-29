@@ -35,7 +35,8 @@ class Simulador:
         for agente in self.agentes:
             if agente.estado == 0:
                 f, c = agente.posicion_proyectada
-                self.mapa.registrar_agente(f, c)
+                if self.mapa.base[f, c] != 2:
+                    self.mapa.registrar_agente(f, c)
 
         self.mapa.actualizar_costos()
 
