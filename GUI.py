@@ -48,9 +48,24 @@ class SimuladorGUI:
         if GENETICO_DISPONIBLE: opciones_algo.append("GENETICO")
         ttk.Combobox(frame_controles, textvariable=self.var_algoritmo, values=opciones_algo, state="readonly").grid(row=0, column=1, pady=5)
 
-        ttk.Label(frame_controles, text="Mapa:").grid(row=1, column=0, sticky=tk.W, pady=5)
-        self.var_mapa = tk.StringVar(value="Map1.png")
-        ttk.Combobox(frame_controles, textvariable=self.var_mapa, values=["Map1.png", "Map2.png","Map2alt.png", "Map3.png"], state="readonly").grid(row=1, column=1, pady=5)
+        ttk.Label(frame_controles, text="Mapa (.png):").grid(row=1, column=0, sticky=tk.W, pady=5)
+        
+        # NUEVO: Búsqueda dinámica en la carpeta 'mapas'
+        carpeta_mapas = "mapas"
+        
+        # Creamos la carpeta automáticamente si el usuario clonó el repo y está vacía
+        os.makedirs(carpeta_mapas, exist_ok=True) 
+        
+        # Leemos los archivos y les anteponemos la carpeta para que el simulador sepa la ruta exacta
+        mapas_disponibles = [f"{carpeta_mapas}/{f}" for f in os.listdir(carpeta_mapas) if f.lower().endswith('.png')]
+        
+        # Fallback de seguridad
+        if not mapas_disponibles:
+            mapas_disponibles = [f"{carpeta_mapas}/faltan_mapas.png"]
+            
+        self.var_mapa = tk.StringVar(value=mapas_disponibles[0])
+        self.combo_mapa = ttk.Combobox(frame_controles, textvariable=self.var_mapa, values=mapas_disponibles, state="readonly", width=17)
+        self.combo_mapa.grid(row=1, column=1, sticky=tk.EW, pady=5)
 
         ttk.Label(frame_controles, text="Nº Agentes:").grid(row=2, column=0, sticky=tk.W, pady=5)
         self.var_agentes = tk.IntVar(value=150)
